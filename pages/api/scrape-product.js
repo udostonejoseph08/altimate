@@ -8,11 +8,12 @@ export default async function handler(req, res) {
   if (!url) return res.status(400).json({ error: 'Missing product URL' });
 
   try {
-    const SCRAPER_API_KEY = process.env.SCRAPER_API_KEY;
-    const apiUrl = `http://api.scraperapi.com?api_key=${SCRAPER_API_KEY}&url=${encodeURIComponent(url)}`;
+    const { data: html } = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+      }
+    });
 
-    const response = await axios.get(apiUrl);
-    const html = response.data;
     const $ = cheerio.load(html);
 
     const title = $('h1').first().text().trim();
@@ -32,6 +33,7 @@ export default async function handler(req, res) {
 
     res.status(200).json({ title, price, description, images, variants });
   } catch (err) {
-    res.status(500).json({ error: 'ScraperAPI failed or product page structure changed.' });
+    console.error('Scraper error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch product page directly.' });
   }
 }
